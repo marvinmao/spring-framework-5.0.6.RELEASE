@@ -731,12 +731,20 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
 		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		//734行:获取容器中所有的bean名,并遍历获取容器中所有的bean名,依
+		//次进行初始化和创建对象(第一个bean跟我们关系不大),但我们可以看
+		//看创建流程
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
 		// Trigger initialization of all non-lazy singleton beans...
 		for (String beanName : beanNames) {
+			//拿到bean的定义信息
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+			//bean不是抽象, 是单实例, 不是懒加载
+			//如果满足这3条件,可以实例化bean
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+				//工厂模式,是否实现FactoryBean接口的bean,如果是的话就会
+				//调用FactoryBean的getObject来获取bean
 				if (isFactoryBean(beanName)) {
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
@@ -752,6 +760,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
 						if (isEagerInit) {
+							//此方法为生成单实例bean的主要方法, 跟进此方
+							//法,见右箭头
 							getBean(beanName);
 						}
 					}
@@ -763,6 +773,10 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// Trigger post-initialization callback for all applicable beans...
+		//766行:所有bean都创建完后,触发初始化后置处理器的回调方法,其实
+		//就是把所有的bean对象遍历,检查所有的Bean是否是
+		//SmartInitializingSingleton接口的,如果是就执行
+		//afterSingletonsInstantiated()；
 		for (String beanName : beanNames) {
 			Object singletonInstance = getSingleton(beanName);
 			if (singletonInstance instanceof SmartInitializingSingleton) {

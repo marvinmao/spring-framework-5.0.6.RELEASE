@@ -225,6 +225,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					this.suppressedExceptions = new LinkedHashSet<>();
 				}
 				try {
+					//通过调用singletonFactory.getObject()获取bean,第一次往往获取不到
 					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
 				}
@@ -251,6 +252,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					afterSingletonCreation(beanName);
 				}
 				if (newSingleton) {
+					//254行:addSingleton(beanName, singletonObject)
+					// 跟进去可发现,会将初始化创建好的bean,放到
+					//singletonObjects的Map中,完成bean初始化及创建,其实
+					//ioc容器就是这些Map；很多的Map里面保存了单实例Bean，
+					//环境信息
 					addSingleton(beanName, singletonObject);
 				}
 			}

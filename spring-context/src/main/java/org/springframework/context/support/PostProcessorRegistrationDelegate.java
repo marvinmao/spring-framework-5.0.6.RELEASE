@@ -200,6 +200,13 @@ class PostProcessorRegistrationDelegate {
 	public static void registerBeanPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
 
+		//1）、188行:先获取ioc容器已经定义了的需要创建对象的所
+		//有BeanPostProcessor,
+		//为什么会有已定义的呢?我们申明了@Configuration,
+		//有可能存在了(在@EnableAspectJAutoProxy注解处理的时候,
+		//已定义了一些组件及处理器,只是没有创建,断点到188行可看
+		//到有Autowired, Required,及internalAutoProxyCreator的
+		//定义信息), 接下来要将已有的beanPostProcessor加入
 		String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
 
 		// Register BeanPostProcessorChecker that logs an info message when
@@ -211,7 +218,11 @@ class PostProcessorRegistrationDelegate {
 		// Separate between BeanPostProcessors that implement PriorityOrdered,
 		// Ordered, and the rest.
 		List<BeanPostProcessor> priorityOrderedPostProcessors = new ArrayList<>();
+
+		//2）、208行:给容器中加别的BeanPostProcessor
+		//beanFactory.addBeanPostProcessor(new BeanPostProcessorChecker(beanFactory,;额外的
 		List<BeanPostProcessor> internalPostProcessors = new ArrayList<>();
+
 		List<String> orderedPostProcessorNames = new ArrayList<>();
 		List<String> nonOrderedPostProcessorNames = new ArrayList<>();
 		for (String ppName : postProcessorNames) {
@@ -231,12 +242,28 @@ class PostProcessorRegistrationDelegate {
 		}
 
 		// First, register the BeanPostProcessors that implement PriorityOrdered.
+		//3）、220行: spring机制:优先级排序
+		//优先注册实现了PriorityOrdered接口的
+		//BeanPostProcessor；//哪些实现PriorityOrdered接口的
+		//BeanPostProcessor接口优先注册
+		//,还做了些处理,判断是不是实现了PriorityOrdered接口
+		//,不同类型保存在不同的 // first
 		sortPostProcessors(priorityOrderedPostProcessors, beanFactory);
+		//将创建成功的
+		//BeanPostProcessor对象加入工厂,AOP核心对象创建完成
 		registerBeanPostProcessors(beanFactory, priorityOrderedPostProcessors);
 
 		// Next, register the BeanPostProcessors that implement Ordered.
+		//4）、224行:再给容器中注册实现了Ordered接口的
+		//BeanPostProcessor； // next, , 不难发现
+		//AnnotationAwareAspectJAutoProxyCreator是实现了
+		//Ordered接口
 		List<BeanPostProcessor> orderedPostProcessors = new ArrayList<>();
 		for (String ppName : orderedPostProcessorNames) {
+			//6）、注册BeanPostProcessor，实际上就是创建
+			//BeanPostProcessor对象，保存在容器中；如何创建
+			//internalAutoProxyCreator?往后看走 .
+			//226行getBean跟进去
 			BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
 			orderedPostProcessors.add(pp);
 			if (pp instanceof MergedBeanDefinitionPostProcessor) {
@@ -247,6 +274,9 @@ class PostProcessorRegistrationDelegate {
 		registerBeanPostProcessors(beanFactory, orderedPostProcessors);
 
 		// Now, register all regular BeanPostProcessors.
+		//5）、236行:注册没实现优先级接口的
+		//BeanPostProcessor； //注册普通的
+		//BeanPostProcessor // Third
 		List<BeanPostProcessor> nonOrderedPostProcessors = new ArrayList<>();
 		for (String ppName : nonOrderedPostProcessorNames) {
 			BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
@@ -303,6 +333,8 @@ class PostProcessorRegistrationDelegate {
 	 * Register the given BeanPostProcessor beans.
 	 */
 	private static void registerBeanPostProcessors(
+			//将创建成功的
+			//BeanPostProcessor对象加入工厂,AOP核心对象创建完成
 			ConfigurableListableBeanFactory beanFactory, List<BeanPostProcessor> postProcessors) {
 
 		for (BeanPostProcessor postProcessor : postProcessors) {

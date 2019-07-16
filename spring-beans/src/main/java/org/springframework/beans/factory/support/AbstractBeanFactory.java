@@ -196,6 +196,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	@Override
 	public Object getBean(String name) throws BeansException {
+		//198行:此处的getBean与测试用例anno.getBean()是同一个
+		//继续跟进此方法,进入下面239行
 		return doGetBean(name, null, null, false);
 	}
 
@@ -243,7 +245,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
+		//第一次获取先检查单实例的缓存中是不是存在此bean;
 		Object sharedInstance = getSingleton(beanName);
+		//缓存中有,就直接拿
 		if (sharedInstance != null && args == null) {
 			if (logger.isDebugEnabled()) {
 				if (isSingletonCurrentlyInCreation(beanName)) {
@@ -266,6 +270,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 			// Check if bean definition exists in this factory.
 			BeanFactory parentBeanFactory = getParentBeanFactory();
+			//spring是否存在父子容器,直接跳过,没有父子工厂关系
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
 				String nameToLookup = originalBeanName(name);
@@ -284,14 +289,19 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 
 			if (!typeCheckOnly) {
+				//标记当前bean已被创建了,防
+				//止在多线程情况下,两个线程同时来创建一个bean,那就不是单实例了
 				markBeanAsCreated(beanName);
 			}
 
 			try {
+				//获取bean定义信息
 				final RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+				//获取当前bean依赖的其它bean,
+				// 如果有依赖的bean,就先把依赖的bean先创建出来,见304行
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
@@ -311,9 +321,39 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				// Create bean instance.
+				//314行:AbstractBeanFactory类,
+				//if (mbd.isSingleton()){
+				//sharedInstance = getSingleton(beanName,
+				//() }//注:第一次加载是没有sharedInstance这个
+				//bean,获取它是有问题的..,
+				//如果有问题直接317行return
+				//createBean(beanName, mbd, args), 点击跟进
+				//getSingleton(beanName)
+
+				//如果bean是单实例的
 				if (mbd.isSingleton()) {
+					//314行:AbstractBeanFactory类,
+					//注意:getSingleton(beanName), 此方法是调用了
+					//AbstractBeanFactory的父类的父类的方法
+					//FactoryBeanRegistrySupport的父类
+					//DefaultSingletonBeanRegistry的
+					//getSingleton(beanName)方法
+
+					//314行:AbstractBeanFactory类,
+					//注意:getSingleton(beanName),其中beanName为
+					//internalAutoProxyCreator, 其实对应的类就是
+					//[AnnotationAwareAspectJAutoProxyCreator]的name
+					//lambda,传一个beanName进行创建bean
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
+							//317行:AbstractBeanFactory类,如果获取不到,就调
+							//用createBean()创建bean
+							//..跟进createBean()方法,
+							//进入AbstractAutowireCapableBeanFactory类
+
+							//若不能获取才到创建,return createBean(beanName;
+							//spring就是利用这个机制,保证单实例bean的唯一, 点击跟进
+							//createBean方法
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {
@@ -1685,6 +1725,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @see #registerDisposableBean
 	 * @see #registerDependentBean
 	 */
+	//1688行:registerDisposableBeanIfNecessary();//之前的Train.java也实现
+	//DisposableBean自定义销毁接口
 	protected void registerDisposableBeanIfNecessary(String beanName, Object bean, RootBeanDefinition mbd) {
 		AccessControlContext acc = (System.getSecurityManager() != null ? getAccessControlContext() : null);
 		if (!mbd.isPrototype() && requiresDestruction(bean, mbd)) {
@@ -1692,6 +1734,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// Register a DisposableBean implementation that performs all destruction
 				// work for the given bean: DestructionAwareBeanPostProcessors,
 				// DisposableBean interface, custom destroy method.
+
+				//在这里相当于先提前注册进来
 				registerDisposableBean(beanName,
 						new DisposableBeanAdapter(bean, beanName, mbd, getBeanPostProcessors(), acc));
 			}

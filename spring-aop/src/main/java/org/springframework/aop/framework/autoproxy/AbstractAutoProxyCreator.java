@@ -245,12 +245,23 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 	@Override
 	public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
+		//先拿到calculator的bean的名字
 		Object cacheKey = getCacheKey(beanClass, beanName);
 
 		if (!StringUtils.hasLength(beanName) || !this.targetSourcedBeans.contains(beanName)) {
+			//第一次处理不包含的
+			//advisedBeans:已经增强的bean;判断cacheKey有没有在增强advisedBeans里
+			//增强advisedBeans意思:保存了所有需要增加的bean,指我们这些业务逻辑
+			//calculator里面的方法是需要切面来切的,要执行它的方法不能像以前那样直接调
+			//了,需要增强
 			if (this.advisedBeans.containsKey(cacheKey)) {
 				return null;
 			}
+			//从后面分析得知:返回false
+			//isInfrastructureClass(beanClass):判断当前bean是否是基础类型的Advice、Pointcut、Advisor、AopInfrastructureBean或者是否是切面（@Aspect） (ctrl+t跟进可
+			//看到-111行:aspectJAdvisorFactory.isAspect(beanClass)) 82行:return (AnnotationUtils.findAnnotation(clazz, Aspect.class) )
+			//很明显calculator不是切面aspect,返回false;
+			//shouldSkip(beanClass, beanName):是否跳过(不处理此bean).怎么判断的
 			if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) {
 				this.advisedBeans.put(cacheKey, Boolean.FALSE);
 				return null;
@@ -299,8 +310,11 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	@Override
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) throws BeansException {
 		if (bean != null) {
+			//拿到bean的名字 calculator
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
+			//之前有没有代理过..
 			if (!this.earlyProxyReferences.contains(cacheKey)) {
+				//如果需要的情况下进行包装
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}
@@ -340,18 +354,27 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
+		//看增强过的bean有没有我们的bean, 返回false
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
+		//看是不是基础类型,是不是切面,false
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
 
 		// Create proxy if we have advice.
+		//创建一个代理对象,获取当前bean的增强器有哪些
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+		//bean的增强器获取完成...
+
+		//如果这个bean有增强器,就不为空
 		if (specificInterceptors != DO_NOT_PROXY) {
+			//把当前已经增强过的bean保存到,保存当前bean在advisedBeans中
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			//如果当前bean有了增强器,那么就创建代理对象,增强此bean(如果当前bean需要增强，创建当前bean的代理对象)
+			//createProxy()跟进去
 			Object proxy = createProxy(
 					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
 			this.proxyTypes.put(cacheKey, proxy.getClass());
@@ -375,6 +398,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @see #shouldSkip
 	 */
 	protected boolean isInfrastructureClass(Class<?> beanClass) {
+		//判断当前bean是否是基础类型的Advice、Pointcut、Advisor、AopInfrastructureBean或者是否是切面（@Aspect） (ctrl+t跟进可
+		//看到-111行:aspectJAdvisorFactory.isAspect(beanClass)) 82行:return (AnnotationUtils.findAnnotation(clazz, Aspect.class) )
+		//很明显calculator不是切面aspect,返回false;
 		boolean retVal = Advice.class.isAssignableFrom(beanClass) ||
 				Pointcut.class.isAssignableFrom(beanClass) ||
 				Advisor.class.isAssignableFrom(beanClass) ||

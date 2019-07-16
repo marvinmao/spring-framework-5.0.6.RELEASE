@@ -516,7 +516,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * ======总结===========
 	 * 	1）、Spring容器在启动的时候，先会保存所有注册进来的Bean的定义信息；
 	 * 		1）、xml注册bean；<bean>
-	 * 		2）、注解注册Bean；@Service、@Component、@Bean、xxx
+	 * 		2）、注解注册Bean；@Service、@Component、@Bean、@Import、@ComponentScan、xxx
+	 * 		3）、实现factoryBean接口
 	 * 	2）、Spring容器会合适的时机创建这些Bean
 	 * 		1）、用到这个bean的时候；利用getBean创建bean；创建好以后保存在容器中；
 	 * 		2）、统一创建剩下所有的bean的时候；finishBeanFactoryInitialization()；
@@ -580,6 +581,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 				// Instantiate all remaining (non-lazy-init) singletons.
 				// 初始化所有剩下的单实例bean
+				//完成BeanFactory初始化工作,其实就是创建完剩下的单实例
+				//bean(除BeanPostProcessor之外),点击进入此方法
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
@@ -903,6 +906,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize LoadTimeWeaverAware beans early to allow for registering their transformers early.
+		//与AspectJ weaver相关的,
+		//可以不关注
 		String[] weaverAwareNames = beanFactory.getBeanNamesForType(LoadTimeWeaverAware.class, false, false);
 		for (String weaverAwareName : weaverAwareNames) {
 			getBean(weaverAwareName);
@@ -915,6 +920,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.freezeConfiguration();
 
 		// Instantiate all remaining (non-lazy-init) singletons.
+		//在869行,开始操作,初始化剩下的单实例bean,完成剩余bean的创
+		//建,beanFactory.preInstantiateSingletons(),点进此方法进入DefaultListableBeanFactory类,
 		beanFactory.preInstantiateSingletons();
 	}
 
