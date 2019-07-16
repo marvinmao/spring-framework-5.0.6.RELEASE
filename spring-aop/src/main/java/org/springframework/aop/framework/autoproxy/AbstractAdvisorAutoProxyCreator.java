@@ -55,11 +55,13 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
+		//1, 先调用父类super.setBeanFactory(beanFactory)
 		super.setBeanFactory(beanFactory);
 		if (!(beanFactory instanceof ConfigurableListableBeanFactory)) {
 			throw new IllegalArgumentException(
 					"AdvisorAutoProxyCreator requires a ConfigurableListableBeanFactory: " + beanFactory);
 		}
+		//2, 63行,初始化beanFactory,点进去
 		initBeanFactory((ConfigurableListableBeanFactory) beanFactory);
 	}
 
@@ -73,6 +75,9 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	protected Object[] getAdvicesAndAdvisorsForBean(
 			Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
 
+		//查找calculator的所有可用的增强器
+		// 怎么查找呢?
+		//CTRL+T 进入findEligibleAdvisors()方法
 		List<Advisor> advisors = findEligibleAdvisors(beanClass, beanName);
 		if (advisors.isEmpty()) {
 			return DO_NOT_PROXY;
@@ -91,7 +96,11 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @see #extendAdvisors
 	 */
 	protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
+		//找到候选的增强器(以前有4个,4个通知方法)
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
+		//找到候选的所有的增强器（找哪
+		//些通知方法是需要切入当前bean方法的）见下
+		// 跟进去,
 		List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
 		extendAdvisors(eligibleAdvisors);
 		if (!eligibleAdvisors.isEmpty()) {
@@ -121,8 +130,10 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	protected List<Advisor> findAdvisorsThatCanApply(
 			List<Advisor> candidateAdvisors, Class<?> beanClass, String beanName) {
 
+		//设置当前的beanName
 		ProxyCreationContext.setCurrentProxiedBeanName(beanName);
 		try {
+			//重点观注此方法,见下，跟进去
 			return AopUtils.findAdvisorsThatCanApply(candidateAdvisors, beanClass);
 		}
 		finally {

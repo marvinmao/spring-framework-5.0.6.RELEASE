@@ -77,10 +77,16 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 
 	@Override
 	protected void initBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+		//调到了AnnotationAwareAspectJAutoProxyCreator给容器中创建自动代理器的,做了以下2件事
 		super.initBeanFactory(beanFactory);
 		if (this.aspectJAdvisorFactory == null) {
+			//1,82行:创建了ReflectiveAspectJAdvisorFactory反射机制,相当于把
+			//aspectJAdvisorFactory对象通知工厂
 			this.aspectJAdvisorFactory = new ReflectiveAspectJAdvisorFactory(beanFactory);
 		}
+		//2,85行:new BeanFactoryAspectJAdvisorsBuilderAdapter,通知适配器
+		//其实相当于aspectJAdvisorFactory通知到构建器的适配器, 把aspectJAdvisorFactory重新
+		//包装了一下
 		this.aspectJAdvisorsBuilder =
 				new BeanFactoryAspectJAdvisorsBuilderAdapter(beanFactory, this.aspectJAdvisorFactory);
 	}

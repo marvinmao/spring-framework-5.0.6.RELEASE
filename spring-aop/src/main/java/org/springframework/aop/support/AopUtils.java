@@ -281,10 +281,12 @@ public abstract class AopUtils {
 	 */
 	public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean hasIntroductions) {
 		if (advisor instanceof IntroductionAdvisor) {
+			//开始匹配
 			return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
 		}
 		else if (advisor instanceof PointcutAdvisor) {
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
+			//切入点表达式算一下每一个方法是否能匹配,并返回
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
 		}
 		else {
@@ -305,22 +307,31 @@ public abstract class AopUtils {
 		if (candidateAdvisors.isEmpty()) {
 			return candidateAdvisors;
 		}
+		//先找到能用的增强器放到LinkedList里
 		List<Advisor> eligibleAdvisors = new LinkedList<>();
+		//然后遍历所有增强器
 		for (Advisor candidate : candidateAdvisors) {
+			//判断增强器是否为IntroductionAdvisor 类型,很明显不是,此for循环跳出..
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
 				eligibleAdvisors.add(candidate);
 			}
 		}
 		boolean hasIntroductions = !eligibleAdvisors.isEmpty();
 		for (Advisor candidate : candidateAdvisors) {
+			//判断是否为IntroductionAdvisor类型,很明显不是
 			if (candidate instanceof IntroductionAdvisor) {
 				// already processed
 				continue;
 			}
+			//判断是否能用，
+			// 跟进去
 			if (canApply(candidate, clazz, hasIntroductions)) {
+				//下面断续跟进此方法
+				// 只要能用,就加入eligibleAdvisors
 				eligibleAdvisors.add(candidate);
 			}
 		}
+		//返回适合calculator且能用的增强器
 		return eligibleAdvisors;
 	}
 
