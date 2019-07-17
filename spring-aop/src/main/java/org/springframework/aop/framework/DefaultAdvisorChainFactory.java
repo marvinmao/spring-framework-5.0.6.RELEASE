@@ -53,16 +53,22 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 
 		// This is somewhat tricky... We have to process introductions first,
 		// but we need to preserve order in the ultimate list.
+		//1）、56行：config是我们的proxfactory
+		//查看config.getAdvisors()内容,它保存了5个拦截器，包括一个默认的ExposeInvocationInterceptor 和 4个增强器；
+		//比如查看[1]InstantiationModelAwarePointcutAdvisor
 		List<Object> interceptorList = new ArrayList<>(config.getAdvisors().length);
 		Class<?> actualClass = (targetClass != null ? targetClass : method.getDeclaringClass());
 		boolean hasIntroductions = hasMatchingIntroductions(config, actualClass);
 		AdvisorAdapterRegistry registry = GlobalAdvisorAdapterRegistry.getInstance();
 
 		for (Advisor advisor : config.getAdvisors()) {
+			//判断是否为PointcutAdvisor类型
 			if (advisor instanceof PointcutAdvisor) {
 				// Add it conditionally.
 				PointcutAdvisor pointcutAdvisor = (PointcutAdvisor) advisor;
 				if (config.isPreFiltered() || pointcutAdvisor.getPointcut().getClassFilter().matches(actualClass)) {
+					//2）、66行：遍历所有的增强器，将其转为Interceptor；
+					//跟进79行看看
 					MethodInterceptor[] interceptors = registry.getInterceptors(advisor);
 					MethodMatcher mm = pointcutAdvisor.getPointcut().getMethodMatcher();
 					if (MethodMatchers.matches(mm, method, actualClass, hasIntroductions)) {
@@ -74,6 +80,7 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 							}
 						}
 						else {
+							//将增强器转为List<MethodInterceptor>,如果不是进行强转 supportsAdvice
 							interceptorList.addAll(Arrays.asList(interceptors));
 						}
 					}
@@ -82,11 +89,13 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 			else if (advisor instanceof IntroductionAdvisor) {
 				IntroductionAdvisor ia = (IntroductionAdvisor) advisor;
 				if (config.isPreFiltered() || ia.getClassFilter().matches(actualClass)) {
+					//将增强器转为List<MethodInterceptor>,如果不是进行强转 supportsAdvice，跟进去看看
 					Interceptor[] interceptors = registry.getInterceptors(advisor);
 					interceptorList.addAll(Arrays.asList(interceptors));
 				}
 			}
 			else {
+				//将增强器转为List<MethodInterceptor>,如果不是进行强转 supportsAdvice，跟进去看看
 				Interceptor[] interceptors = registry.getInterceptors(advisor);
 				interceptorList.addAll(Arrays.asList(interceptors));
 			}

@@ -46,6 +46,18 @@ import org.springframework.lang.Nullable;
  * 1、BeanFactoryPostProcessor：beanFactory的后置处理器；
  * 		在BeanFactory标准初始化之后调用，来定制和修改BeanFactory的内容；
  * 		所有的bean定义已经保存加载到beanFactory，但是bean的实例还未创建
+ *
+ *
+ *
+ * 	BeanPostProcessor与InstantiationAwareBeanPostProcessor两后置处理器的区别?
+ * 【BeanPostProcessor是在Bean对象创建完成初始化前后调用的】
+ * 【InstantiationAwareBeanPostProcessor是在创建Bean实例之前先尝试用后
+ * 置处理器返回对象的】
+ * 另:AnnotationAwareAspectJAutoProxyCreator是这种后置处理器, 会在任何
+ * bean创建之前先尝试返回bean的实例
+ * 【AnnotationAwareAspectJAutoProxyCreator在所有bean创建之前会有一个
+ * 拦截，InstantiationAwareBeanPostProcessor，会调用
+ * postProcessBeforeInstantiation()】
  * */
 public interface BeanPostProcessor {
 

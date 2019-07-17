@@ -43,6 +43,19 @@ import org.springframework.lang.Nullable;
  * @since 1.2
  * @see org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator#setCustomTargetSourceCreators
  * @see org.springframework.aop.framework.autoproxy.target.LazyInitTargetSourceCreator
+ *
+ *
+ *
+ *BeanPostProcessor与InstantiationAwareBeanPostProcessor两后置处理器的区别?
+ * 【BeanPostProcessor是在Bean对象创建完成初始化前后调用的】
+ * 【InstantiationAwareBeanPostProcessor是在创建Bean实例之前先尝试用后
+ * 置处理器返回对象的】
+ * 另:AnnotationAwareAspectJAutoProxyCreator是这种后置处理器, 会在任何
+ * bean创建之前先尝试返回bean的实例
+ * 【AnnotationAwareAspectJAutoProxyCreator在所有bean创建之前会有一个
+ * 拦截，InstantiationAwareBeanPostProcessor，会调用
+ * postProcessBeforeInstantiation()】
+ *
  */
 public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
